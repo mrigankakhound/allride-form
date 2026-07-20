@@ -5,11 +5,11 @@ import FormField from './FormField';
  * ID Document type options
  */
 const DOCUMENT_TYPES = [
-  { value: 'aadhaar',  label: 'Aadhaar Card',        icon: 'bi-person-vcard' },
-  { value: 'passport', label: 'Passport',             icon: 'bi-passport' },
-  { value: 'pan',      label: 'PAN Card',             icon: 'bi-credit-card-2-back' },
-  { value: 'voter',    label: 'Voter ID',             icon: 'bi-person-badge' },
-  { value: 'driving',  label: "Driving License Copy", icon: 'bi-card-text' },
+  { value: 'aadhaar', label: 'Aadhaar Card', icon: 'bi-person-vcard' },
+  { value: 'passport', label: 'Passport', icon: 'bi-passport' },
+  { value: 'pan', label: 'PAN Card', icon: 'bi-credit-card-2-back' },
+  { value: 'voter', label: 'Voter ID', icon: 'bi-person-badge' },
+  { value: 'driving', label: "Driving License Copy", icon: 'bi-card-text' },
 ];
 
 /**
@@ -101,7 +101,8 @@ const IdentitySection = ({ formData, errors, touched, handleChange, handleBlur }
             type="file"
             name="customerPhoto"
             className="form-control form-control-custom"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
+            capture="user"
             onChange={handleChange}
           />
           {formData.customerPhoto && (
@@ -123,7 +124,8 @@ const IdentitySection = ({ formData, errors, touched, handleChange, handleBlur }
             type="file"
             name="drivingLicensePhoto"
             className="form-control form-control-custom"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
+            capture="environment"
             onChange={handleChange}
           />
           {formData.drivingLicensePhoto && (
@@ -145,7 +147,8 @@ const IdentitySection = ({ formData, errors, touched, handleChange, handleBlur }
             type="file"
             name="idProofPhoto"
             className="form-control form-control-custom"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/*"
+            capture="environment"
             onChange={handleChange}
           />
           {formData.idProofPhoto && (
