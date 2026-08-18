@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 // ── Hardcoded credentials ────────────────────────────────────────────────────
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'allride@123';
+const ADMIN_PASSWORD = 'Admin@1234';
 
 const Login = () => {
   const [username, setUsername] = useState('');
