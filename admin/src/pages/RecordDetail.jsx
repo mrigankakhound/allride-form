@@ -31,8 +31,8 @@ const docLabel = (type) => {
 };
 
 // ── Photo Card Component ───────────────────────────────────────────────────────
-const PhotoCard = ({ label, icon, url }) => (
-  <div className="photo-card">
+const PhotoCard = ({ label, icon, url, cardClass }) => (
+  <div className={`photo-card${cardClass ? ` ${cardClass}` : ''}`}>
     <div className="photo-label"><i className={`bi ${icon}`} />{label}</div>
     {url ? (
       <>
@@ -231,7 +231,10 @@ const generatePDF = async (data) => {
       if (y + imgH + 15 > 275) { doc.addPage(); y = 20; imgX = margin; }
 
       try {
-        const imgData = await fetchImageAsDataUrl(field.url);
+      const imgData = await fetchImageAsDataUrl(
+          field.url,
+          field.label === 'Digital Signature'  // white bg for transparent signature PNG
+        );
         if (imgData) {
           // Label
           doc.setFont('helvetica', 'bold');
@@ -283,7 +286,9 @@ const generatePDF = async (data) => {
 
 
 // ── Cross-origin image loader via canvas ─────────────────────────────────────
-const fetchImageAsDataUrl = (url) =>
+// whiteBackground=true fills the canvas white before drawing, so transparent
+// PNGs (like signatures drawn on a white canvas) don't become black in the PDF.
+const fetchImageAsDataUrl = (url, whiteBackground = false) =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -292,7 +297,12 @@ const fetchImageAsDataUrl = (url) =>
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
-        canvas.getContext('2d').drawImage(img, 0, 0);
+        const ctx = canvas.getContext('2d');
+        if (whiteBackground) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        ctx.drawImage(img, 0, 0);
         resolve(canvas.toDataURL('image/jpeg', 0.85));
       } catch (e) {
         reject(e);
@@ -512,6 +522,7 @@ const RecordDetail = () => {
                 label="Digital Signature"
                 icon="bi-vector-pen"
                 url={data.signatureUrl}
+                cardClass="photo-card--signature"
               />
             </div>
           </div>

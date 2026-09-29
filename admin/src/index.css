@@ -858,6 +858,12 @@ body {
   padding: 0.5rem;
 }
 
+/* Signature card always needs white background so dark ink is visible */
+.photo-card--signature .photo-img {
+  background: #ffffff;
+  border: none;
+}
+
 .photo-no-img {
   height: 180px;
   display: flex;
