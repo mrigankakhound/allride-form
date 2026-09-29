@@ -2,13 +2,17 @@ const express = require('express');
 const router = express.Router();
 
 const upload = require('../middlewares/upload');
-const { createAgreement, getAgreements, getAgreementById } = require('../controllers/rentalController');
+const { createAgreement, getAgreements, getAgreementById, exportAgreementsExcel } = require('../controllers/rentalController');
 
 // POST   /api/rental-agreements  — Submit a new rental agreement (with file uploads)
 router.post('/', upload, createAgreement);
 
 // GET    /api/rental-agreements  — Get all agreements (admin dashboard)
 router.get('/', getAgreements);
+
+// GET    /api/rental-agreements/export/excel  — Download all records as xlsx (admin)
+// IMPORTANT: must be registered BEFORE /:id to avoid the wildcard matching "export"
+router.get('/export/excel', exportAgreementsExcel);
 
 // GET    /api/rental-agreements/:id  — Get a single agreement by ID
 router.get('/:id', getAgreementById);

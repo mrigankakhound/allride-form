@@ -1,4 +1,5 @@
 const RentalAgreement = require('../models/RentalAgreement');
+const ExcelJS = require('exceljs');
 
 // ─── Helper: extract Cloudinary URL from multer file object ──────────────────
 const getFileUrl = (files, fieldName) => {
@@ -166,4 +167,101 @@ const getAgreementById = async (req, res) => {
   }
 };
 
-module.exports = { createAgreement, getAgreements, getAgreementById };
+// ─── GET /api/rental-agreements/export/excel ─────────────────────────────────
+const exportAgreementsExcel = async (req, res) => {
+  try {
+    // Retrieve ALL records — no select() limit, no pagination
+    const agreements = await RentalAgreement.find().sort({ submittedAt: -1 });
+
+    // Build workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'ALL RIDE Rentals Admin';
+    const sheet = workbook.addWorksheet('Rental Records');
+
+    // Define the 6 required columns
+    sheet.columns = [
+      { header: 'Name',             key: 'name',            width: 28 },
+      { header: 'Phone Number',     key: 'phoneNumber',     width: 18 },
+      { header: 'Address',          key: 'address',         width: 40 },
+      { header: 'Vehicle Type',     key: 'vehicleType',     width: 18 },
+      { header: 'Rental Duration',  key: 'rentalDuration',  width: 20 },
+      { header: 'Purpose',          key: 'purpose',         width: 30 },
+    ];
+
+    // Style the header row — bold, accent background
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E3A5F' },
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 20;
+
+    // Map each record to a data row
+    agreements.forEach((a) => {
+      // Combine address parts — use whatever is available, gracefully skip blanks
+      const addressParts = [
+        a.homeAddress,
+        a.localAddress,
+        a.city,
+        a.state,
+        a.zipCode,
+        a.country,
+      ].filter(Boolean);
+      const fullAddress = addressParts.join(', ');
+
+      // Rental duration formatted as "N day(s)"
+      const duration =
+        a.rentalDuration != null
+          ? `${a.rentalDuration} day${a.rentalDuration !== 1 ? 's' : ''}`
+          : '';
+
+      sheet.addRow({
+        name:           [a.firstName, a.lastName].filter(Boolean).join(' ') || '',
+        phoneNumber:    a.contactNumber || '',
+        address:        fullAddress,
+        vehicleType:    a.vehicleType   || '',
+        rentalDuration: duration,
+        purpose:        a.rentalPurpose || '',
+      });
+    });
+
+    // Alternate row shading for readability
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return; // skip header
+      row.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: rowNumber % 2 === 0 ? 'FFF0F4FA' : 'FFFFFFFF' },
+      };
+      row.alignment = { vertical: 'middle' };
+    });
+
+    // Send the file as a downloadable response
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="ALL_RIDE_Rental_Records.xlsx"'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('❌ exportAgreementsExcel error:', error);
+    // Only send error JSON if headers have not been sent yet
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate Excel export.',
+        error: error.message,
+      });
+    }
+  }
+};
+
+module.exports = { createAgreement, getAgreements, getAgreementById, exportAgreementsExcel };

@@ -55,6 +55,9 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [excelLoading, setExcelLoading] = useState(false);
+  const [excelError, setExcelError]     = useState('');
+
   const navigate = useNavigate();
 
   // ── Fetch all agreements ──────────────────────────────────────────────────
@@ -94,11 +97,39 @@ const Dashboard = () => {
     );
   }, [searchQuery, agreements]);
 
+  // ── Download Excel ────────────────────────────────────────────────────────
+  const handleDownloadExcel = useCallback(async () => {
+    setExcelLoading(true);
+    setExcelError('');
+    try {
+      const res = await fetch(`${API}/api/rental-agreements/export/excel`);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.message || `Server error (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = 'ALL_RIDE_Rental_Records.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExcelError(err.message || 'Failed to download Excel. Please try again.');
+      setTimeout(() => setExcelError(''), 5000);
+    } finally {
+      setExcelLoading(false);
+    }
+  }, []);
+
   // ── Logout ────────────────────────────────────────────────────────────────
   const handleLogout = () => {
     localStorage.removeItem('isAdmin');
     navigate('/login');
   };
+
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const totalCount = agreements.length;
@@ -159,7 +190,46 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Table Card */}
+          {/* ── Download Excel button row ─────────────────────────────────── */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            {excelError && (
+              <span style={{
+                marginRight: '0.75rem',
+                color: '#fca5a5',
+                fontSize: '0.82rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}>
+                <i className="bi bi-exclamation-circle-fill" />
+                {excelError}
+              </span>
+            )}
+            <button
+              id="btn-download-excel"
+              className="action-btn"
+              onClick={handleDownloadExcel}
+              disabled={excelLoading}
+              style={{
+                background: excelLoading
+                  ? 'rgba(16, 185, 129, 0.08)'
+                  : 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(5,150,105,0.18))',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                color: '#34d399',
+                padding: '0.45rem 1rem',
+                fontWeight: 700,
+                opacity: excelLoading ? 0.7 : 1,
+                cursor: excelLoading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {excelLoading ? (
+                <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '0.8rem', height: '0.8rem', borderWidth: '0.15em' }} /> Preparing Excel…</>
+              ) : (
+                <><i className="bi bi-file-earmark-spreadsheet" /> Download Excel</>
+              )}
+            </button>
+          </div>
+
           <div className="admin-card">
             <div className="admin-card-header">
               <div className="admin-card-title">
